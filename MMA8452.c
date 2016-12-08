@@ -44,12 +44,17 @@
 void CMU_Setup(void);
 void GPIO_Setup(void);
 void I2CSetup(void);
+void writetoI2C(int data);
+void readfromI2C(uint32_t destination_buffer);
 
 int fl;
+uint32_t i2c_txBuffer1;								// variables for storing ADC values of two ADCs from TSL2561 device
 uint32_t i2c_txBuffer2;								// variables for storing ADC values of two ADCs from TSL2561 device
 uint32_t i2c_txBuffer3;
 uint32_t i2c_txBuffer4;
 uint32_t i2c_txBuffer5;
+uint32_t i2c_txBuffer6;								// variables for storing ADC values of two ADCs from TSL2561 device
+
 
 
 void CMU_Setup(void){
@@ -132,6 +137,26 @@ void I2CSetup(void)
 
 }
 
+
+void writetoI2C(int data)
+{
+	I2C1->TXDATA = data;
+	 while(! (I2C1->IF & I2C_IF_ACK));
+
+	fl = (I2C1->IF & I2C_IF_ACK);
+     I2C1->IFC = fl;
+}
+
+
+void readfromI2C(uint32_t destination_buffer)
+{
+	while (!(I2C1->IF & I2C_IF_RXDATAV));
+	destination_buffer = I2C1->RXDATA;
+
+
+	I2C1->CMD |= I2C_CMD_ACK;
+}
+
 int main(void)
 {
 
@@ -150,14 +175,11 @@ int main(void)
 
 
 
+    // data out rate
 
+    I2C1->CMD = 0x01;
 
-//fl = (I2C1->IF & I2C_IF_ACK);
-
-//I2C1->IFC = fl;
-
-        I2C1->TXDATA = 0x3A;
-        I2C1->CMD = 0x01;
+    I2C1->TXDATA = 0x3A;
 
 
         while(! (I2C1->IF & I2C_IF_ACK));
@@ -165,41 +187,93 @@ int main(void)
         fl = (I2C1->IF & I2C_IF_ACK);
         I2C1->IFC = fl;
 
+        writetoI2C(0x2A);
 
-        I2C1->TXDATA = 0x0D;
-        while(! (I2C1->IF & I2C_IF_ACK));
 
-        fl = (I2C1->IF & I2C_IF_ACK);
-               I2C1->IFC = fl;
+        writetoI2C(0x08);
 
-         I2C1->CMD = 0x01;
-
-         I2C1->TXDATA = 0x3B;
-         while(! (I2C1->IF & I2C_IF_ACK));
-
-         fl = (I2C1->IF & I2C_IF_ACK);
-         I2C1->IFC = fl;
-
-         while (!(I2C1->STATUS & I2C_STATUS_RXDATAV));
-         i2c_txBuffer2 = I2C1->RXDATA;
-
-  /*       I2C1->CMD |= I2C_CMD_ACK;
-
-         while (!(I2C1->IF & I2C_IF_RXDATAV));
-                  i2c_txBuffer3 = I2C1->RXDATA;
-
-                  I2C1->CMD |= I2C_CMD_ACK;
-
-         while (!(I2C1->IF & I2C_IF_RXDATAV));
-                i2c_txBuffer4 = I2C1->RXDATA;
-
-                I2C1->CMD |= I2C_CMD_ACK;
-
-         while (!(I2C1->IF & I2C_IF_RXDATAV));
-               i2c_txBuffer5 = I2C1->RXDATA;			*/
-
-               I2C1->CMD |= I2C_CMD_NACK;
 
         I2C1->CMD = 0x02;
+
+
+        //  register scale set
+
+
+         I2C1->TXDATA = 0x3A;
+                 I2C1->CMD = 0x01;
+
+
+                 while(! (I2C1->IF & I2C_IF_ACK));
+
+                 fl = (I2C1->IF & I2C_IF_ACK);
+                 I2C1->IFC = fl;
+
+                 writetoI2C(0x0E);
+
+
+                 writetoI2C(0x10);
+
+
+                I2C1->CMD = 0x02;
+
+
+
+                // active mode
+
+                I2C1->TXDATA = 0x3A;
+                        I2C1->CMD = 0x01;
+
+
+                        while(! (I2C1->IF & I2C_IF_ACK));
+
+                        fl = (I2C1->IF & I2C_IF_ACK);
+                        I2C1->IFC = fl;
+
+                        writetoI2C(0x2A);
+
+                        writetoI2C(0x09);
+
+                        I2C1->CMD = 0x02;
+
+
+
+
+
+
+                        // read from out registers
+
+        I2C1->TXDATA = 0x3A;
+       I2C1->CMD = 0x01;
+
+
+       while(! (I2C1->IF & I2C_IF_ACK));
+
+        fl = (I2C1->IF & I2C_IF_ACK);
+        I2C1->IFC = fl;
+
+        writetoI2C(0x01);
+        I2C1->CMD = 0x01;
+
+        writetoI2C(0x3B);
+
+        readfromI2C(i2c_txBuffer1);
+
+        readfromI2C(i2c_txBuffer2);
+
+        readfromI2C(i2c_txBuffer5);
+
+
+         while (!(I2C1->IF & I2C_IF_RXDATAV));
+         i2c_txBuffer6 = I2C1->RXDATA;
+
+         I2C1->CMD |= I2C_CMD_NACK;
+
+         I2C1->CMD = 0x02;
+
+  //      readfromI2C(i2c_txBuffer3);
+
+  //      readfromI2C(i2c_txBuffer4);
+
+
 
 }
